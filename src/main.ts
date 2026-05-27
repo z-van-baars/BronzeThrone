@@ -2,11 +2,13 @@ import { GameState } from './core/GameState';
 import { placeBuilding } from './core/Building';
 import { recalculateSubstrate } from './core/Substrate';
 import { processResourceTick } from './core/Resource';
+import { processPopulationTick } from './core/Population';
 import { TICK_INTERVAL_MS } from './core/Config';
 import { Renderer } from './render/Renderer';
 import { GridRenderer } from './render/GridRenderer';
 import { BuildingRenderer } from './render/BuildingRenderer';
 import { SubstrateOverlay } from './render/SubstrateOverlay';
+import { PopulationRenderer } from './render/PopulationRenderer';
 import { InfoPanel } from './ui/InfoPanel';
 import { ResourceBar } from './ui/ResourceBar';
 import { BuildMenu } from './ui/BuildMenu';
@@ -23,9 +25,11 @@ async function main() {
   const gridRenderer = new GridRenderer();
   const buildingRenderer = new BuildingRenderer();
   const substrateOverlay = new SubstrateOverlay();
+  const populationRenderer = new PopulationRenderer();
 
   renderer.worldContainer.addChild(gridRenderer.container);
   renderer.worldContainer.addChild(substrateOverlay.container);
+  renderer.worldContainer.addChild(populationRenderer.container);
   renderer.worldContainer.addChild(buildingRenderer.container);
 
   gridRenderer.drawTerrain(gameState);
@@ -49,6 +53,7 @@ async function main() {
   function redrawWorld(): void {
     buildingRenderer.draw(gameState);
     substrateOverlay.draw(gameState);
+    populationRenderer.draw(gameState);
     gridRenderer.updateSelection(gameState);
     infoPanel.update(gameState);
     resourceBar.update(gameState);
@@ -81,9 +86,12 @@ async function main() {
     for (let i = 0; i < gameState.speed; i++) {
       gameState.tick();
       processResourceTick(gameState);
+      processPopulationTick(gameState);
     }
+    populationRenderer.draw(gameState);
     resourceBar.update(gameState);
     buildMenu.update(gameState);
+    infoPanel.update(gameState);
   }, TICK_INTERVAL_MS);
 
   redrawWorld();

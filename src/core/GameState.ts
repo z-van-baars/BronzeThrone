@@ -1,5 +1,6 @@
 import { Grid } from './Grid';
 import { generateMap } from './MapGen';
+import { initPopulation, PopulationState } from './Population';
 import { BuildingInstance, ResourceType } from '../types';
 
 export type GameSpeed = 0 | 1 | 2 | 3;
@@ -14,6 +15,7 @@ export class GameState {
     [ResourceType.Bronze]: 0,
     [ResourceType.Wealth]: 0,
   };
+  readonly population: PopulationState = initPopulation();
 
   tickCount = 0;
   speed: GameSpeed = 1;
