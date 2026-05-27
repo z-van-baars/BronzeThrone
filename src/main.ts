@@ -12,6 +12,7 @@ import { PopulationRenderer } from './render/PopulationRenderer';
 import { InfoPanel } from './ui/InfoPanel';
 import { ResourceBar } from './ui/ResourceBar';
 import { BuildMenu } from './ui/BuildMenu';
+import { SliderPanel } from './ui/SliderPanel';
 import { LayerToggle } from './ui/LayerToggle';
 import { SubstrateLayer } from './types';
 
@@ -50,12 +51,15 @@ async function main() {
     substrateOverlay.draw(gameState);
   });
 
+  const sliderPanel = new SliderPanel(() => redrawWorld());
+
   function redrawWorld(): void {
     buildingRenderer.draw(gameState);
     substrateOverlay.draw(gameState);
     populationRenderer.draw(gameState);
     gridRenderer.updateSelection(gameState);
     infoPanel.update(gameState);
+    sliderPanel.update(gameState);
     resourceBar.update(gameState);
     buildMenu.update(gameState);
   }
@@ -79,6 +83,7 @@ async function main() {
     }
     gridRenderer.updateSelection(gameState);
     infoPanel.update(gameState);
+    sliderPanel.update(gameState);
   });
 
   setInterval(() => {
