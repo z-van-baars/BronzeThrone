@@ -2,6 +2,14 @@ import { BuildingDef, BuildingInstance, TERRAIN_PASSABLE } from '../types';
 import { BUILDING_DEFS } from '../data/buildings';
 import { GameState } from './GameState';
 
+const TIER_POP_THRESHOLDS: Record<number, number> = {
+  0: 0,
+  1: 0,
+  2: 50,
+  3: 200,
+  4: 500,
+};
+
 export function getBuildingDef(defId: string): BuildingDef | undefined {
   return BUILDING_DEFS[defId];
 }
@@ -14,6 +22,11 @@ export function canPlaceBuilding(
 ): { ok: boolean; reason?: string } {
   const def = getBuildingDef(defId);
   if (!def) return { ok: false, reason: 'Unknown building' };
+
+  const popReq = TIER_POP_THRESHOLDS[def.tier] ?? 0;
+  if (state.population.totalPopulation < popReq) {
+    return { ok: false, reason: `Need ${popReq} population` };
+  }
 
   for (const [resType, cost] of Object.entries(def.resourceCost)) {
     const available = state.resources[resType as keyof typeof state.resources];
