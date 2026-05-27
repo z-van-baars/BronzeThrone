@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kings of Bronze</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: #1a1a2e; }
+    #game-container { width: 100%; height: 100%; position: relative; }
+    canvas { display: block; }
+
+    #info-panel {
+      position: absolute;
+      bottom: 12px;
+      left: 12px;
+      background: rgba(20, 20, 40, 0.85);
+      color: #d4c9a8;
+      font-family: 'Segoe UI', Tahoma, sans-serif;
+      font-size: 13px;
+      padding: 8px 12px;
+      border-radius: 4px;
+      border: 1px solid rgba(212, 201, 168, 0.3);
+      pointer-events: none;
+      min-width: 160px;
+    }
+    #info-panel .label { color: #8a7e65; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+    #info-panel .value { margin-bottom: 4px; }
+
+    #resource-bar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 36px;
+      background: rgba(20, 20, 40, 0.9);
+      border-bottom: 1px solid rgba(212, 201, 168, 0.3);
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      gap: 24px;
+      font-family: 'Segoe UI', Tahoma, sans-serif;
+      font-size: 13px;
+      color: #d4c9a8;
+    }
+    .resource-item { display: flex; align-items: center; gap: 6px; }
+    .resource-icon { width: 14px; height: 14px; border-radius: 2px; }
+  </style>
+</head>
+<body>
+  <div id="game-container">
+    <div id="resource-bar"></div>
+    <div id="info-panel" style="display: none;"></div>
+  </div>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
