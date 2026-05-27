@@ -14,6 +14,7 @@ import { ResourceBar } from './ui/ResourceBar';
 import { BuildMenu } from './ui/BuildMenu';
 import { SliderPanel } from './ui/SliderPanel';
 import { EventPopup } from './ui/EventPopup';
+import { MilitaryPopup } from './ui/MilitaryPopup';
 import { LayerToggle } from './ui/LayerToggle';
 import { SubstrateLayer } from './types';
 
@@ -54,9 +55,12 @@ async function main() {
 
   const sliderPanel = new SliderPanel(() => redrawWorld());
 
-  const eventPopup = new EventPopup(() => {
-    redrawWorld();
-  });
+  const eventPopup = new EventPopup(() => redrawWorld());
+  const militaryPopup = new MilitaryPopup(() => redrawWorld());
+
+  function anyPopupOpen(): boolean {
+    return eventPopup.isVisible || militaryPopup.isVisible;
+  }
 
   function redrawWorld(): void {
     buildingRenderer.draw(gameState);
@@ -70,7 +74,7 @@ async function main() {
   }
 
   renderer.app.canvas.addEventListener('click', (e: MouseEvent) => {
-    if (eventPopup.isVisible) return;
+    if (anyPopupOpen()) return;
 
     const { gx, gy } = renderer.screenToGrid(e.clientX, e.clientY);
 
@@ -93,19 +97,31 @@ async function main() {
     sliderPanel.update(gameState);
   });
 
+  // Speed controls
+  window.addEventListener('keydown', (e) => {
+    if (e.key === ' ') {
+      gameState.speed = gameState.speed === 0 ? 1 : 0;
+    } else if (e.key === '1') gameState.speed = 1;
+    else if (e.key === '2') gameState.speed = 2;
+    else if (e.key === '3') gameState.speed = 3;
+  });
+
   setInterval(() => {
     if (gameState.speed === 0) return;
-    if (eventPopup.isVisible) return;
+    if (anyPopupOpen()) return;
 
     for (let i = 0; i < gameState.speed; i++) {
       gameState.tick();
       processResourceTick(gameState);
       processPopulationTick(gameState);
       gameState.eventDeck.tick(gameState);
+      gameState.military.tick(gameState);
     }
 
     if (gameState.eventDeck.activeEvent) {
       eventPopup.show(gameState.eventDeck.activeEvent, gameState.eventDeck, gameState);
+    } else if (gameState.military.activeThreat && gameState.military.activeThreat.ticksRemaining <= 0) {
+      militaryPopup.showWarning(gameState.military.activeThreat, gameState.military, gameState);
     }
 
     populationRenderer.draw(gameState);
