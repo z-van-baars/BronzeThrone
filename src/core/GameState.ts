@@ -3,6 +3,7 @@ import { generateMap } from './MapGen';
 import { initPopulation, PopulationState } from './Population';
 import { EventDeck } from './EventDeck';
 import { MilitarySystem } from './Military';
+import { TradeSystem } from './Trade';
 import { BuildingInstance, ResourceType } from '../types';
 
 export type GameSpeed = 0 | 1 | 2 | 3;
@@ -20,6 +21,7 @@ export class GameState {
   readonly population: PopulationState = initPopulation();
   readonly eventDeck: EventDeck = new EventDeck();
   readonly military: MilitarySystem = new MilitarySystem();
+  readonly trade: TradeSystem = new TradeSystem();
 
   tickCount = 0;
   speed: GameSpeed = 1;
