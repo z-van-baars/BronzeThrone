@@ -13,6 +13,7 @@ import { InfoPanel } from './ui/InfoPanel';
 import { ResourceBar } from './ui/ResourceBar';
 import { BuildMenu } from './ui/BuildMenu';
 import { SliderPanel } from './ui/SliderPanel';
+import { EventPopup } from './ui/EventPopup';
 import { LayerToggle } from './ui/LayerToggle';
 import { SubstrateLayer } from './types';
 
@@ -53,6 +54,10 @@ async function main() {
 
   const sliderPanel = new SliderPanel(() => redrawWorld());
 
+  const eventPopup = new EventPopup(() => {
+    redrawWorld();
+  });
+
   function redrawWorld(): void {
     buildingRenderer.draw(gameState);
     substrateOverlay.draw(gameState);
@@ -65,6 +70,8 @@ async function main() {
   }
 
   renderer.app.canvas.addEventListener('click', (e: MouseEvent) => {
+    if (eventPopup.isVisible) return;
+
     const { gx, gy } = renderer.screenToGrid(e.clientX, e.clientY);
 
     if (activeBuildId && gameState.grid.inBounds(gx, gy)) {
@@ -88,11 +95,19 @@ async function main() {
 
   setInterval(() => {
     if (gameState.speed === 0) return;
+    if (eventPopup.isVisible) return;
+
     for (let i = 0; i < gameState.speed; i++) {
       gameState.tick();
       processResourceTick(gameState);
       processPopulationTick(gameState);
+      gameState.eventDeck.tick(gameState);
     }
+
+    if (gameState.eventDeck.activeEvent) {
+      eventPopup.show(gameState.eventDeck.activeEvent, gameState.eventDeck, gameState);
+    }
+
     populationRenderer.draw(gameState);
     resourceBar.update(gameState);
     buildMenu.update(gameState);
