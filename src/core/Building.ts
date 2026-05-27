@@ -10,6 +10,10 @@ const TIER_POP_THRESHOLDS: Record<number, number> = {
   4: 500,
 };
 
+const MAX_COUNT: Record<string, number> = {
+  settlers_camp: 1,
+};
+
 export function getBuildingDef(defId: string): BuildingDef | undefined {
   return BUILDING_DEFS[defId];
 }
@@ -22,6 +26,13 @@ export function canPlaceBuilding(
 ): { ok: boolean; reason?: string } {
   const def = getBuildingDef(defId);
   if (!def) return { ok: false, reason: 'Unknown building' };
+
+  if (defId in MAX_COUNT) {
+    const count = [...state.buildings.values()].filter(b => b.defId === defId).length;
+    if (count >= MAX_COUNT[defId]) {
+      return { ok: false, reason: `Maximum ${def.name} already built` };
+    }
+  }
 
   const popReq = TIER_POP_THRESHOLDS[def.tier] ?? 0;
   if (state.population.totalPopulation < popReq) {
@@ -89,4 +100,22 @@ export function placeBuilding(
   }
 
   return instance;
+}
+
+export function razeBuilding(state: GameState, buildingId: string): boolean {
+  const building = state.buildings.get(buildingId);
+  if (!building) return false;
+
+  const def = getBuildingDef(building.defId);
+  if (!def) return false;
+
+  for (let dy = 0; dy < def.footprint.h; dy++) {
+    for (let dx = 0; dx < def.footprint.w; dx++) {
+      const cell = state.grid.getCell(building.x + dx, building.y + dy);
+      if (cell) cell.buildingId = null;
+    }
+  }
+
+  state.buildings.delete(buildingId);
+  return true;
 }

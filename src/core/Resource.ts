@@ -12,11 +12,15 @@ export function processResourceTick(state: GameState): void {
     const costMul = getCostMultiplier(building.intensity);
 
     for (const [res, amount] of Object.entries(def.resourceProduction)) {
-      state.resources[res as ResourceType] += (amount as number) * effectMul;
+      const produced = (amount as number) * effectMul;
+      state.resources[res as ResourceType] += produced;
+      state.ledger.record(def.name, res as ResourceType, produced);
     }
 
     for (const [res, amount] of Object.entries(def.resourceConsumption)) {
-      state.resources[res as ResourceType] -= (amount as number) * costMul;
+      const consumed = (amount as number) * costMul;
+      state.resources[res as ResourceType] -= consumed;
+      state.ledger.record(def.name, res as ResourceType, -consumed);
     }
   }
 

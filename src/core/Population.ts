@@ -63,6 +63,22 @@ export function processPopulationTick(state: GameState): void {
   const foodSurplus = totalFood - foodNeeded;
   const isStarving = foodSurplus < 0;
 
+  const TIER_LABELS: Record<CitizenTier, string> = {
+    [CitizenTier.Laborer]: 'Laborers',
+    [CitizenTier.Craftsman]: 'Craftsmen',
+    [CitizenTier.Merchant]: 'Merchants',
+    [CitizenTier.Priest]: 'Priests',
+    [CitizenTier.Warrior]: 'Warriors',
+    [CitizenTier.Elite]: 'Elites',
+  };
+
+  for (const tier of Object.values(CitizenTier)) {
+    const consumption = pop.tiers[tier] * FOOD_PER_CITIZEN;
+    if (consumption > 0.001) {
+      state.ledger.record(TIER_LABELS[tier], ResourceType.Food, -consumption);
+    }
+  }
+
   if (isStarving) {
     state.resources[ResourceType.Food] = 0;
     const starvationRate = Math.min(0.05, Math.abs(foodSurplus) / (pop.totalPopulation + 1));

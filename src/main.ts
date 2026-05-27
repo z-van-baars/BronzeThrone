@@ -1,5 +1,5 @@
 import { GameState } from './core/GameState';
-import { placeBuilding } from './core/Building';
+import { placeBuilding, canPlaceBuilding, razeBuilding } from './core/Building';
 import { recalculateSubstrate } from './core/Substrate';
 import { processResourceTick } from './core/Resource';
 import { processPopulationTick } from './core/Population';
@@ -15,9 +15,13 @@ import { BuildMenu } from './ui/BuildMenu';
 import { SliderPanel } from './ui/SliderPanel';
 import { EventPopup } from './ui/EventPopup';
 import { MilitaryPopup } from './ui/MilitaryPopup';
+import { RazeConfirm } from './ui/RazeConfirm';
+import { Toast } from './ui/Toast';
 import { RunSummary } from './ui/RunSummary';
 import { LayerToggle } from './ui/LayerToggle';
 import { SubstrateLayer } from './types';
+
+type ToolMode = 'build' | 'raze' | 'select';
 
 async function main() {
   let gameState = new GameState();
@@ -41,11 +45,15 @@ async function main() {
 
   const infoPanel = new InfoPanel();
   const resourceBar = new ResourceBar();
+  const toast = new Toast();
 
   let activeBuildId: string | null = null;
+  let toolMode: ToolMode = 'select';
 
   const buildMenu = new BuildMenu((defId) => {
     activeBuildId = defId;
+    toolMode = defId ? 'build' : 'select';
+    updateRazeBtn();
   });
   buildMenu.update(gameState);
 
@@ -57,33 +65,49 @@ async function main() {
   const sliderPanel = new SliderPanel(() => redrawWorld());
   const eventPopup = new EventPopup(() => redrawWorld());
   const militaryPopup = new MilitaryPopup(() => redrawWorld());
+  const razeConfirm = new RazeConfirm();
 
   const runSummary = new RunSummary(() => {
     gameState = new GameState();
     gridRenderer.drawTerrain(gameState);
     gridRenderer.drawGridLines(gameState);
     activeBuildId = null;
+    toolMode = 'select';
     redrawWorld();
   });
 
-  // Concede button
-  const concedeBtn = document.createElement('button');
-  concedeBtn.textContent = 'CONCEDE';
-  Object.assign(concedeBtn.style, {
+  // Top-left toolbar row
+  const toolbarRow = document.createElement('div');
+  Object.assign(toolbarRow.style, {
     position: 'absolute',
     top: '44px',
     left: '12px',
-    background: 'rgba(20, 20, 40, 0.85)',
-    color: '#8a7e65',
-    border: '1px solid rgba(212,201,168,0.2)',
-    borderRadius: '3px',
-    padding: '4px 10px',
-    cursor: 'pointer',
-    fontFamily: "'Segoe UI', Tahoma, sans-serif",
-    fontSize: '10px',
-    letterSpacing: '1px',
-    transition: 'all 0.15s',
+    display: 'flex',
+    gap: '4px',
   });
+  container.appendChild(toolbarRow);
+
+  function makeToolbarBtn(text: string, title: string): HTMLElement {
+    const btn = document.createElement('button');
+    btn.textContent = text;
+    btn.title = title;
+    Object.assign(btn.style, {
+      background: 'rgba(20, 20, 40, 0.85)',
+      color: '#8a7e65',
+      border: '1px solid rgba(212,201,168,0.2)',
+      borderRadius: '3px',
+      padding: '4px 10px',
+      cursor: 'pointer',
+      fontFamily: "'Segoe UI', Tahoma, sans-serif",
+      fontSize: '10px',
+      letterSpacing: '1px',
+      transition: 'all 0.15s',
+    });
+    return btn;
+  }
+
+  // Concede button
+  const concedeBtn = makeToolbarBtn('CONCEDE', 'End this run');
   concedeBtn.addEventListener('mouseenter', () => {
     concedeBtn.style.borderColor = 'rgba(255,80,80,0.5)';
     concedeBtn.style.color = '#cc5555';
@@ -97,14 +121,37 @@ async function main() {
       runSummary.show(gameState, 'concede');
     }
   });
-  container.appendChild(concedeBtn);
+  toolbarRow.appendChild(concedeBtn);
+
+  // Raze button
+  const razeBtn = makeToolbarBtn('🔥 RAZE', 'Demolish buildings (R)');
+  function updateRazeBtn(): void {
+    if (toolMode === 'raze') {
+      razeBtn.style.background = 'rgba(200,50,30,0.25)';
+      razeBtn.style.borderColor = 'rgba(200,50,30,0.5)';
+      razeBtn.style.color = '#ff8866';
+    } else {
+      razeBtn.style.background = 'rgba(20, 20, 40, 0.85)';
+      razeBtn.style.borderColor = 'rgba(212,201,168,0.2)';
+      razeBtn.style.color = '#8a7e65';
+    }
+  }
+  razeBtn.addEventListener('click', () => {
+    if (toolMode === 'raze') {
+      toolMode = 'select';
+    } else {
+      toolMode = 'raze';
+      activeBuildId = null;
+      buildMenu.deselect();
+    }
+    updateRazeBtn();
+    buildMenu.update(gameState);
+  });
+  toolbarRow.appendChild(razeBtn);
 
   // Speed indicator
   const speedIndicator = document.createElement('div');
   Object.assign(speedIndicator.style, {
-    position: 'absolute',
-    top: '44px',
-    left: '90px',
     background: 'rgba(20, 20, 40, 0.85)',
     color: '#8a7e65',
     border: '1px solid rgba(212,201,168,0.2)',
@@ -115,16 +162,16 @@ async function main() {
     letterSpacing: '0.5px',
     pointerEvents: 'none',
   });
-  container.appendChild(speedIndicator);
+  toolbarRow.appendChild(speedIndicator);
 
   function updateSpeedIndicator(): void {
-    const labels = ['PAUSED', '1x', '2x', '3x'];
+    const labels = ['⏸ PAUSED', '▶ 1x', '▶▶ 2x', '▶▶▶ 3x'];
     speedIndicator.textContent = labels[gameState.speed];
     speedIndicator.style.color = gameState.speed === 0 ? '#cc5555' : '#8a7e65';
   }
 
   function anyPopupOpen(): boolean {
-    return eventPopup.isVisible || militaryPopup.isVisible || runSummary.isVisible;
+    return eventPopup.isVisible || militaryPopup.isVisible || runSummary.isVisible || razeConfirm.isVisible;
   }
 
   function redrawWorld(): void {
@@ -143,21 +190,52 @@ async function main() {
     if (anyPopupOpen()) return;
 
     const { gx, gy } = renderer.screenToGrid(e.clientX, e.clientY);
+    if (!gameState.grid.inBounds(gx, gy)) {
+      gameState.selectedCell = null;
+      gridRenderer.updateSelection(gameState);
+      return;
+    }
 
-    if (activeBuildId && gameState.grid.inBounds(gx, gy)) {
-      const result = placeBuilding(gameState, activeBuildId, gx, gy);
-      if (result) {
+    // Build mode
+    if (toolMode === 'build' && activeBuildId) {
+      const check = canPlaceBuilding(gameState, activeBuildId, gx, gy);
+      if (check.ok) {
+        placeBuilding(gameState, activeBuildId, gx, gy);
         recalculateSubstrate(gameState);
+        toast.show(`${activeBuildId.replace(/_/g, ' ')} placed`, 'success');
+        // Auto-deselect after placement
+        activeBuildId = null;
+        toolMode = 'select';
+        buildMenu.deselect();
         redrawWorld();
+        return;
+      } else {
+        toast.show(check.reason ?? 'Cannot place here', 'error');
         return;
       }
     }
 
-    if (gameState.grid.inBounds(gx, gy)) {
-      gameState.selectedCell = { x: gx, y: gy };
-    } else {
-      gameState.selectedCell = null;
+    // Raze mode
+    if (toolMode === 'raze') {
+      const cell = gameState.grid.getCell(gx, gy);
+      if (cell?.buildingId) {
+        const building = gameState.buildings.get(cell.buildingId);
+        if (building) {
+          razeConfirm.show(building.defId, () => {
+            razeBuilding(gameState, building.id);
+            recalculateSubstrate(gameState);
+            toast.show('Building razed', 'info');
+            redrawWorld();
+          }, () => {});
+        }
+      } else {
+        toast.show('Nothing to raze here', 'error');
+      }
+      return;
     }
+
+    // Select mode
+    gameState.selectedCell = { x: gx, y: gy };
     gridRenderer.updateSelection(gameState);
     infoPanel.update(gameState);
     sliderPanel.update(gameState);
@@ -165,6 +243,7 @@ async function main() {
 
   window.addEventListener('keydown', (e) => {
     if (anyPopupOpen()) return;
+
     if (e.key === ' ') {
       e.preventDefault();
       gameState.speed = gameState.speed === 0 ? 1 : 0;
@@ -172,12 +251,30 @@ async function main() {
     } else if (e.key === '1') { gameState.speed = 1; updateSpeedIndicator(); }
     else if (e.key === '2') { gameState.speed = 2; updateSpeedIndicator(); }
     else if (e.key === '3') { gameState.speed = 3; updateSpeedIndicator(); }
+    else if (e.key === 'r' || e.key === 'R') {
+      if (toolMode === 'raze') {
+        toolMode = 'select';
+      } else {
+        toolMode = 'raze';
+        activeBuildId = null;
+        buildMenu.deselect();
+      }
+      updateRazeBtn();
+      buildMenu.update(gameState);
+    } else if (e.key === 'Escape') {
+      toolMode = 'select';
+      activeBuildId = null;
+      buildMenu.deselect();
+      updateRazeBtn();
+      buildMenu.update(gameState);
+    }
   });
 
   setInterval(() => {
     if (gameState.speed === 0) return;
     if (anyPopupOpen()) return;
 
+    gameState.ledger.clear();
     for (let i = 0; i < gameState.speed; i++) {
       gameState.tick();
       processResourceTick(gameState);
@@ -189,7 +286,6 @@ async function main() {
 
     runSummary.trackPeak(gameState);
 
-    // Total collapse
     if (gameState.tickCount > 30 &&
         gameState.population.totalPopulation < 0.5 &&
         gameState.buildings.size <= 1) {
