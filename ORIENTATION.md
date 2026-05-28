@@ -114,6 +114,14 @@ Full world re-render (`redrawWorld()`) runs on building placement, raze, cell se
 
 ---
 
+## Active Experiments
+
+| Doc | Branch | Topic |
+|-----|--------|-------|
+| [`ECON-REBALANCE.md`](ECON-REBALANCE.md) | `econ-rebalance` | Citizens as the economy — buildings cost upkeep, dev tiles produce resources. Evaluation criteria, rollback instructions, and follow-on directions inside. |
+
+---
+
 ## Current State (as of last commit)
 
 PoC is feature-complete per the design doc scope. All major systems are implemented:
