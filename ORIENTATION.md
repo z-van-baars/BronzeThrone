@@ -1,8 +1,8 @@
-# Kings of Bronze — Agent Orientation
+# Bronze Throne — Agent Orientation
 
 Bronze Age roguelike city-builder PoC. TypeScript + Pixi.js. Runs in the browser via Vite (`npm run dev`, default port 5173/5174).
 
-Full design intent lives in `bronze-age-city-state-design-doc.md`. This document covers the *implementation*.
+Full design intent lives in `bronze-throne-design-doc.md`. This document covers the *implementation*.
 
 ---
 
