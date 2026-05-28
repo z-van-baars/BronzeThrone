@@ -5,6 +5,7 @@ export const BUILDING_DEFS: Record<string, BuildingDef> = {
   settlers_camp: {
     id: 'settlers_camp',
     name: "Settler's Camp",
+    description: 'Your founding encampment. Provides basic sustenance and timber to establish your settlement.',
     footprint: { w: 2, h: 2 },
     emissions: [
       { layer: SubstrateLayer.Sustenance, strength: 4, radius: 8 },
@@ -26,6 +27,7 @@ export const BUILDING_DEFS: Record<string, BuildingDef> = {
   farm: {
     id: 'farm',
     name: 'Farm',
+    description: 'Cultivated fields producing food. Strengthens sustenance in the surrounding area.',
     footprint: { w: 2, h: 2 },
     emissions: [
       { layer: SubstrateLayer.Sustenance, strength: 6, radius: 6 },
@@ -42,6 +44,7 @@ export const BUILDING_DEFS: Record<string, BuildingDef> = {
   lumber_camp: {
     id: 'lumber_camp',
     name: 'Lumber Camp',
+    description: 'Harvests timber from the surrounding wilderness. Drives industrial development nearby.',
     footprint: { w: 1, h: 1 },
     emissions: [
       { layer: SubstrateLayer.Industry, strength: 3, radius: 5 },
@@ -57,9 +60,10 @@ export const BUILDING_DEFS: Record<string, BuildingDef> = {
     color: 0x6b4226,
   },
 
-  clay_pit: {
-    id: 'clay_pit',
-    name: 'Clay Pit',
+  quarry: {
+    id: 'quarry',
+    name: 'Quarry',
+    description: 'Extracts stone from the earth for construction. Drives industrial development nearby.',
     footprint: { w: 1, h: 1 },
     emissions: [
       { layer: SubstrateLayer.Industry, strength: 2, radius: 4 },
@@ -78,6 +82,7 @@ export const BUILDING_DEFS: Record<string, BuildingDef> = {
   well: {
     id: 'well',
     name: 'Well',
+    description: 'A freshwater source that supports settlement growth nearby.',
     footprint: { w: 1, h: 1 },
     emissions: [
       { layer: SubstrateLayer.Sustenance, strength: 3, radius: 4 },
@@ -94,6 +99,7 @@ export const BUILDING_DEFS: Record<string, BuildingDef> = {
   pasture: {
     id: 'pasture',
     name: 'Pasture',
+    description: 'Grazing lands for livestock. Produces food and extends sustenance across a wide area.',
     footprint: { w: 3, h: 2 },
     emissions: [
       { layer: SubstrateLayer.Sustenance, strength: 5, radius: 5 },
@@ -112,6 +118,7 @@ export const BUILDING_DEFS: Record<string, BuildingDef> = {
   simple_shrine: {
     id: 'simple_shrine',
     name: 'Simple Shrine',
+    description: 'A humble place of worship. Radiates piety and a touch of culture to the surrounding area.',
     footprint: { w: 1, h: 1 },
     emissions: [
       { layer: SubstrateLayer.Piety, strength: 4, radius: 6 },
@@ -129,6 +136,7 @@ export const BUILDING_DEFS: Record<string, BuildingDef> = {
   palisade: {
     id: 'palisade',
     name: 'Palisade Wall',
+    description: 'Wooden defensive wall providing local security against raids and wild animals.',
     footprint: { w: 1, h: 1 },
     emissions: [
       { layer: SubstrateLayer.Security, strength: 3, radius: 4 },
@@ -146,6 +154,7 @@ export const BUILDING_DEFS: Record<string, BuildingDef> = {
   stone_quarry: {
     id: 'stone_quarry',
     name: 'Stone Quarry',
+    description: 'Large-scale stone extraction operation. Heavy industry that displaces commerce and farmland.',
     footprint: { w: 2, h: 2 },
     emissions: [
       { layer: SubstrateLayer.Industry, strength: 4, radius: 5 },
@@ -158,13 +167,14 @@ export const BUILDING_DEFS: Record<string, BuildingDef> = {
     resourceProduction: { [ResourceType.Stone]: 6 },
     resourceConsumption: {},
     tier: 2,
-    prerequisites: ['clay_pit'],
+    prerequisites: ['quarry'],
     color: 0x777777,
   },
 
   granary: {
     id: 'granary',
     name: 'Granary',
+    description: 'Stores surplus grain, stabilizing food supply and boosting sustenance and commerce.',
     footprint: { w: 2, h: 1 },
     emissions: [
       { layer: SubstrateLayer.Sustenance, strength: 4, radius: 7 },
@@ -182,6 +192,7 @@ export const BUILDING_DEFS: Record<string, BuildingDef> = {
   market: {
     id: 'market',
     name: 'Market',
+    description: 'A bustling marketplace that generates wealth and attracts merchants. Consumes food to operate.',
     footprint: { w: 2, h: 2 },
     emissions: [
       { layer: SubstrateLayer.Prosperity, strength: 6, radius: 8 },
@@ -192,13 +203,14 @@ export const BUILDING_DEFS: Record<string, BuildingDef> = {
     resourceProduction: { [ResourceType.Wealth]: 2 },
     resourceConsumption: { [ResourceType.Food]: 1 },
     tier: 2,
-    prerequisites: ['farm', 'clay_pit'],
+    prerequisites: ['farm', 'quarry'],
     color: 0xe8c44a,
   },
 
   potters_workshop: {
     id: 'potters_workshop',
     name: "Potter's Workshop",
+    description: 'Turns raw stone into valuable pottery. Generates wealth but consumes stone.',
     footprint: { w: 1, h: 1 },
     emissions: [
       { layer: SubstrateLayer.Industry, strength: 4, radius: 4 },
@@ -210,13 +222,14 @@ export const BUILDING_DEFS: Record<string, BuildingDef> = {
     resourceProduction: { [ResourceType.Wealth]: 1 },
     resourceConsumption: { [ResourceType.Stone]: 1 },
     tier: 2,
-    prerequisites: ['clay_pit'],
+    prerequisites: ['quarry'],
     color: 0xb87333,
   },
 
   weavers_hut: {
     id: 'weavers_hut',
     name: "Weaver's Hut",
+    description: 'Produces textiles for trade. A light industry that blends with commerce.',
     footprint: { w: 1, h: 1 },
     emissions: [
       { layer: SubstrateLayer.Industry, strength: 3, radius: 4 },
@@ -234,6 +247,7 @@ export const BUILDING_DEFS: Record<string, BuildingDef> = {
   watchtower: {
     id: 'watchtower',
     name: 'Watchtower',
+    description: 'Tall lookout providing extended security coverage over a wide area.',
     footprint: { w: 1, h: 1 },
     emissions: [
       { layer: SubstrateLayer.Security, strength: 5, radius: 7 },
@@ -250,6 +264,7 @@ export const BUILDING_DEFS: Record<string, BuildingDef> = {
   barracks: {
     id: 'barracks',
     name: 'Barracks',
+    description: 'Houses and trains warriors. Strong security presence but discourages commerce and worship.',
     footprint: { w: 2, h: 2 },
     emissions: [
       { layer: SubstrateLayer.Security, strength: 6, radius: 8 },
@@ -270,6 +285,7 @@ export const BUILDING_DEFS: Record<string, BuildingDef> = {
   temple: {
     id: 'temple',
     name: 'Temple',
+    description: 'A grand place of worship radiating piety and culture. Requires wealth to maintain its ceremonies.',
     footprint: { w: 2, h: 2 },
     emissions: [
       { layer: SubstrateLayer.Piety, strength: 8, radius: 10 },
@@ -287,6 +303,7 @@ export const BUILDING_DEFS: Record<string, BuildingDef> = {
   bronze_smithy: {
     id: 'bronze_smithy',
     name: 'Bronze Smithy',
+    description: 'Smelts bronze for tools and weapons. Heavy industry that displaces commerce and farmland.',
     footprint: { w: 2, h: 1 },
     emissions: [
       { layer: SubstrateLayer.Industry, strength: 6, radius: 6 },
@@ -306,6 +323,7 @@ export const BUILDING_DEFS: Record<string, BuildingDef> = {
   scribal_school: {
     id: 'scribal_school',
     name: 'Scribal School',
+    description: 'Trains scribes and scholars. Spreads culture and supports commerce through literacy.',
     footprint: { w: 1, h: 1 },
     emissions: [
       { layer: SubstrateLayer.Culture, strength: 6, radius: 7 },
@@ -323,6 +341,7 @@ export const BUILDING_DEFS: Record<string, BuildingDef> = {
   stone_wall: {
     id: 'stone_wall',
     name: 'Stone Wall',
+    description: 'Sturdy fortification providing reliable defense for your settlement.',
     footprint: { w: 1, h: 1 },
     emissions: [
       { layer: SubstrateLayer.Security, strength: 5, radius: 5 },
@@ -339,6 +358,7 @@ export const BUILDING_DEFS: Record<string, BuildingDef> = {
   trade_post: {
     id: 'trade_post',
     name: 'Trade Post',
+    description: 'Facilitates trade with neighboring city-states, generating wealth and cultural exchange.',
     footprint: { w: 2, h: 1 },
     emissions: [
       { layer: SubstrateLayer.Prosperity, strength: 5, radius: 7 },
@@ -356,6 +376,7 @@ export const BUILDING_DEFS: Record<string, BuildingDef> = {
   small_palace: {
     id: 'small_palace',
     name: 'Small Palace',
+    description: 'Seat of local governance. Projects prosperity, culture, and security across a wide radius.',
     footprint: { w: 3, h: 3 },
     emissions: [
       { layer: SubstrateLayer.Prosperity, strength: 8, radius: 10 },
@@ -380,6 +401,7 @@ export const BUILDING_DEFS: Record<string, BuildingDef> = {
   great_temple: {
     id: 'great_temple',
     name: 'Great Temple',
+    description: 'A monumental temple dominating the skyline. Massive piety and cultural influence.',
     footprint: { w: 3, h: 3 },
     emissions: [
       { layer: SubstrateLayer.Piety, strength: 12, radius: 14 },
@@ -402,6 +424,7 @@ export const BUILDING_DEFS: Record<string, BuildingDef> = {
   grand_palace: {
     id: 'grand_palace',
     name: 'Grand Palace',
+    description: 'The seat of power for your city-state. Unrivaled prosperity, culture, and defensive authority.',
     footprint: { w: 4, h: 4 },
     emissions: [
       { layer: SubstrateLayer.Prosperity, strength: 12, radius: 14 },
@@ -425,6 +448,7 @@ export const BUILDING_DEFS: Record<string, BuildingDef> = {
   library: {
     id: 'library',
     name: 'Library',
+    description: 'Repository of knowledge. Powerful cultural influence that also supports commerce.',
     footprint: { w: 2, h: 2 },
     emissions: [
       { layer: SubstrateLayer.Culture, strength: 10, radius: 10 },
@@ -446,6 +470,7 @@ export const BUILDING_DEFS: Record<string, BuildingDef> = {
   siege_workshop: {
     id: 'siege_workshop',
     name: 'Siege Workshop',
+    description: 'Builds siege engines and heavy weapons. Strong military industry that discourages commerce.',
     footprint: { w: 2, h: 2 },
     emissions: [
       { layer: SubstrateLayer.Security, strength: 6, radius: 6 },

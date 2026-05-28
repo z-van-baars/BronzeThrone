@@ -7,7 +7,8 @@ import { TradeSystem } from './Trade';
 import { ResourceLedger } from './ResourceLedger';
 import { BuildingInstance, ResourceType } from '../types';
 
-export type GameSpeed = 0 | 1 | 2 | 3;
+export const SPEED_VALUES = [0, 0.125, 0.25, 0.5, 1.0, 1.5];
+export const SPEED_LABELS = ['⏸ PAUSED', '▶ 0.25x', '▶ 0.5x', '▶ 1x', '▶▶ 2x', '▶▶▶ 3x'];
 
 export class GameState {
   readonly grid: Grid;
@@ -26,7 +27,7 @@ export class GameState {
   readonly ledger: ResourceLedger = new ResourceLedger();
 
   tickCount = 0;
-  speed: GameSpeed = 1;
+  speedIndex = 3;
   selectedCell: { x: number; y: number } | null = null;
 
   private nextBuildingId = 1;

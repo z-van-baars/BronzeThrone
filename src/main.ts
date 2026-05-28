@@ -1,14 +1,16 @@
-import { GameState } from './core/GameState';
+import { GameState, SPEED_VALUES, SPEED_LABELS } from './core/GameState';
 import { placeBuilding, canPlaceBuilding, razeBuilding } from './core/Building';
 import { recalculateSubstrate } from './core/Substrate';
 import { processResourceTick } from './core/Resource';
 import { processPopulationTick } from './core/Population';
-import { TICK_INTERVAL_MS } from './core/Config';
+import { processDevelopmentTick } from './core/Development';
+import { CELL_SIZE } from './core/Config';
 import { Renderer } from './render/Renderer';
 import { GridRenderer } from './render/GridRenderer';
 import { BuildingRenderer } from './render/BuildingRenderer';
 import { SubstrateOverlay } from './render/SubstrateOverlay';
 import { PopulationRenderer } from './render/PopulationRenderer';
+import { BlueprintPreview } from './render/BlueprintPreview';
 import { InfoPanel } from './ui/InfoPanel';
 import { ResourceBar } from './ui/ResourceBar';
 import { BuildMenu } from './ui/BuildMenu';
@@ -23,6 +25,8 @@ import { SubstrateLayer } from './types';
 
 type ToolMode = 'build' | 'raze' | 'select';
 
+const TICK_TIMER_MS = 500;
+
 async function main() {
   let gameState = new GameState();
 
@@ -34,11 +38,13 @@ async function main() {
   const buildingRenderer = new BuildingRenderer();
   const substrateOverlay = new SubstrateOverlay();
   const populationRenderer = new PopulationRenderer();
+  const blueprintPreview = new BlueprintPreview();
 
   renderer.worldContainer.addChild(gridRenderer.container);
   renderer.worldContainer.addChild(substrateOverlay.container);
   renderer.worldContainer.addChild(populationRenderer.container);
   renderer.worldContainer.addChild(buildingRenderer.container);
+  renderer.worldContainer.addChild(blueprintPreview.container);
 
   gridRenderer.drawTerrain(gameState);
   gridRenderer.drawGridLines(gameState);
@@ -49,11 +55,15 @@ async function main() {
 
   let activeBuildId: string | null = null;
   let toolMode: ToolMode = 'select';
+  let hoverGx = -1;
+  let hoverGy = -1;
+  let tickAccumulator = 0;
 
   const buildMenu = new BuildMenu((defId) => {
     activeBuildId = defId;
     toolMode = defId ? 'build' : 'select';
     updateRazeBtn();
+    updateBlueprint();
   });
   buildMenu.update(gameState);
 
@@ -73,6 +83,7 @@ async function main() {
     gridRenderer.drawGridLines(gameState);
     activeBuildId = null;
     toolMode = 'select';
+    tickAccumulator = 0;
     redrawWorld();
   });
 
@@ -145,6 +156,7 @@ async function main() {
       buildMenu.deselect();
     }
     updateRazeBtn();
+    updateBlueprint();
     buildMenu.update(gameState);
   });
   toolbarRow.appendChild(razeBtn);
@@ -165,13 +177,20 @@ async function main() {
   toolbarRow.appendChild(speedIndicator);
 
   function updateSpeedIndicator(): void {
-    const labels = ['⏸ PAUSED', '▶ 1x', '▶▶ 2x', '▶▶▶ 3x'];
-    speedIndicator.textContent = labels[gameState.speed];
-    speedIndicator.style.color = gameState.speed === 0 ? '#cc5555' : '#8a7e65';
+    speedIndicator.textContent = SPEED_LABELS[gameState.speedIndex];
+    speedIndicator.style.color = gameState.speedIndex === 0 ? '#cc5555' : '#8a7e65';
   }
 
   function anyPopupOpen(): boolean {
     return eventPopup.isVisible || militaryPopup.isVisible || runSummary.isVisible || razeConfirm.isVisible;
+  }
+
+  function updateBlueprint(): void {
+    if (toolMode === 'build' && activeBuildId) {
+      blueprintPreview.draw(gameState, activeBuildId, hoverGx, hoverGy);
+    } else {
+      blueprintPreview.draw(gameState, null, -1, -1);
+    }
   }
 
   function redrawWorld(): void {
@@ -184,7 +203,17 @@ async function main() {
     resourceBar.update(gameState);
     buildMenu.update(gameState);
     updateSpeedIndicator();
+    updateBlueprint();
   }
+
+  renderer.app.canvas.addEventListener('mousemove', (e: MouseEvent) => {
+    const { gx, gy } = renderer.screenToGrid(e.clientX, e.clientY);
+    if (gx !== hoverGx || gy !== hoverGy) {
+      hoverGx = gx;
+      hoverGy = gy;
+      updateBlueprint();
+    }
+  });
 
   renderer.app.canvas.addEventListener('click', (e: MouseEvent) => {
     if (anyPopupOpen()) return;
@@ -203,7 +232,6 @@ async function main() {
         placeBuilding(gameState, activeBuildId, gx, gy);
         recalculateSubstrate(gameState);
         toast.show(`${activeBuildId.replace(/_/g, ' ')} placed`, 'success');
-        // Auto-deselect after placement
         activeBuildId = null;
         toolMode = 'select';
         buildMenu.deselect();
@@ -246,11 +274,21 @@ async function main() {
 
     if (e.key === ' ') {
       e.preventDefault();
-      gameState.speed = gameState.speed === 0 ? 1 : 0;
+      gameState.speedIndex = gameState.speedIndex === 0 ? 3 : 0;
       updateSpeedIndicator();
-    } else if (e.key === '1') { gameState.speed = 1; updateSpeedIndicator(); }
-    else if (e.key === '2') { gameState.speed = 2; updateSpeedIndicator(); }
-    else if (e.key === '3') { gameState.speed = 3; updateSpeedIndicator(); }
+    } else if (e.key === '+' || e.key === '=') {
+      if (gameState.speedIndex < SPEED_VALUES.length - 1) {
+        gameState.speedIndex++;
+        updateSpeedIndicator();
+      }
+    } else if (e.key === '-' || e.key === '_') {
+      if (gameState.speedIndex > 0) {
+        gameState.speedIndex--;
+        updateSpeedIndicator();
+      }
+    } else if (e.key === '1') { gameState.speedIndex = 3; updateSpeedIndicator(); }
+    else if (e.key === '2') { gameState.speedIndex = 4; updateSpeedIndicator(); }
+    else if (e.key === '3') { gameState.speedIndex = 5; updateSpeedIndicator(); }
     else if (e.key === 'r' || e.key === 'R') {
       if (toolMode === 'raze') {
         toolMode = 'select';
@@ -260,29 +298,41 @@ async function main() {
         buildMenu.deselect();
       }
       updateRazeBtn();
+      updateBlueprint();
       buildMenu.update(gameState);
     } else if (e.key === 'Escape') {
       toolMode = 'select';
       activeBuildId = null;
       buildMenu.deselect();
       updateRazeBtn();
+      updateBlueprint();
       buildMenu.update(gameState);
     }
   });
 
   setInterval(() => {
-    if (gameState.speed === 0) return;
+    const tps = SPEED_VALUES[gameState.speedIndex];
+    if (tps === 0) return;
     if (anyPopupOpen()) return;
 
-    gameState.ledger.clear();
-    for (let i = 0; i < gameState.speed; i++) {
+    tickAccumulator += tps * (TICK_TIMER_MS / 1000);
+
+    let ticked = false;
+    while (tickAccumulator >= 1) {
+      tickAccumulator -= 1;
+      ticked = true;
+
+      gameState.ledger.clear();
       gameState.tick();
       processResourceTick(gameState);
       processPopulationTick(gameState);
+      processDevelopmentTick(gameState);
       gameState.eventDeck.tick(gameState);
       gameState.military.tick(gameState);
       gameState.trade.tick(gameState);
     }
+
+    if (!ticked) return;
 
     runSummary.trackPeak(gameState);
 
@@ -303,7 +353,7 @@ async function main() {
     resourceBar.update(gameState);
     buildMenu.update(gameState);
     infoPanel.update(gameState);
-  }, TICK_INTERVAL_MS);
+  }, TICK_TIMER_MS);
 
   redrawWorld();
 }

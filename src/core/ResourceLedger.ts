@@ -26,15 +26,21 @@ export class ResourceLedger {
     return net;
   }
 
-  getBreakdown(resource: ResourceType): { source: string; amount: number }[] {
-    const bySource = new Map<string, number>();
+  getBreakdown(resource: ResourceType): { source: string; amount: number; count: number }[] {
+    const bySource = new Map<string, { amount: number; count: number }>();
     for (const e of this.entries) {
       if (e.resource !== resource) continue;
-      bySource.set(e.source, (bySource.get(e.source) ?? 0) + e.amount);
+      const existing = bySource.get(e.source);
+      if (existing) {
+        existing.amount += e.amount;
+        existing.count++;
+      } else {
+        bySource.set(e.source, { amount: e.amount, count: 1 });
+      }
     }
 
     return [...bySource.entries()]
-      .map(([source, amount]) => ({ source, amount }))
+      .map(([source, data]) => ({ source, amount: data.amount, count: data.count }))
       .filter(e => Math.abs(e.amount) >= 0.01)
       .sort((a, b) => b.amount - a.amount);
   }

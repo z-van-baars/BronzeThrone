@@ -1,6 +1,6 @@
 import { GameState } from '../core/GameState';
 import { BUILDING_DEFS } from '../data/buildings';
-import { TerrainType, SubstrateLayer } from '../types';
+import { TerrainType, SubstrateLayer, DEV_TYPE_LABELS } from '../types';
 
 const TERRAIN_NAMES: Record<TerrainType, string> = {
   [TerrainType.Grass]: 'Grassland',
@@ -64,9 +64,18 @@ export class InfoPanel {
       }
     }
 
+    if (cell.devLevel > 0 && cell.devType) {
+      const devTypeLabel = DEV_TYPE_LABELS[cell.devType];
+      const distressStr = cell.devDistress > 0.01
+        ? ` <span style="color:#cc5555">(${Math.round(cell.devDistress * 100)}% distress)</span>`
+        : '';
+      html += `<div class="label" style="margin-top:4px">Development</div>`;
+      html += `<div class="value" style="font-size:11px">Lv ${cell.devLevel} ${devTypeLabel}${distressStr}</div>`;
+    }
+
     const hasSubstrate = Object.values(SubstrateLayer).some(l => cell.substrate[l] > 0.01);
     if (hasSubstrate) {
-      html += `<div class="label" style="margin-top:4px">Substrate</div>`;
+      html += `<div class="label" style="margin-top:4px">Potential</div>`;
       for (const layer of Object.values(SubstrateLayer)) {
         const val = cell.substrate[layer];
         if (val > 0.01) {

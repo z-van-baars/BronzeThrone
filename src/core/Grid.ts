@@ -22,6 +22,9 @@ export class Grid {
             [SubstrateLayer.Sustenance]: 0,
             [SubstrateLayer.Culture]: 0,
           },
+          devLevel: 0,
+          devType: null,
+          devDistress: 0,
         };
       }
     }

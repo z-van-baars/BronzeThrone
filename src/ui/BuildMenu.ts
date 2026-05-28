@@ -1,5 +1,5 @@
 import { BUILDING_DEFS } from '../data/buildings';
-import { ResourceType, RESOURCE_COLORS } from '../types';
+import { ResourceType, SubstrateLayer, RESOURCE_COLORS, RESOURCE_LABELS } from '../types';
 import { GameState } from '../core/GameState';
 
 const TIER_NAMES = ['Origin', 'Settlement', 'Village', 'Town', 'City-State'];
@@ -13,8 +13,18 @@ const RES_ICONS: Record<ResourceType, string> = {
   [ResourceType.Wealth]: '💰',
 };
 
+const LAYER_SHORT: Record<SubstrateLayer, string> = {
+  [SubstrateLayer.Security]: 'Security',
+  [SubstrateLayer.Prosperity]: 'Prosperity',
+  [SubstrateLayer.Piety]: 'Piety',
+  [SubstrateLayer.Industry]: 'Industry',
+  [SubstrateLayer.Sustenance]: 'Sustenance',
+  [SubstrateLayer.Culture]: 'Culture',
+};
+
 export class BuildMenu {
   private el: HTMLElement;
+  private tooltip: HTMLElement;
   selectedBuilding: string | null = null;
   private onSelect: (defId: string | null) => void;
 
@@ -39,7 +49,28 @@ export class BuildMenu {
       overflowY: 'auto',
     });
 
-    document.getElementById('game-container')!.appendChild(this.el);
+    this.tooltip = document.createElement('div');
+    Object.assign(this.tooltip.style, {
+      position: 'absolute',
+      right: '200px',
+      top: '0',
+      background: 'rgba(15, 15, 30, 0.95)',
+      border: '1px solid rgba(212, 201, 168, 0.35)',
+      borderRadius: '4px',
+      padding: '10px 12px',
+      fontFamily: "'Segoe UI', Tahoma, sans-serif",
+      fontSize: '11px',
+      color: '#d4c9a8',
+      width: '240px',
+      display: 'none',
+      pointerEvents: 'none',
+      boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+      zIndex: '60',
+    });
+
+    const container = document.getElementById('game-container')!;
+    container.appendChild(this.el);
+    container.appendChild(this.tooltip);
   }
 
   update(gameState: GameState): void {
@@ -78,7 +109,6 @@ export class BuildMenu {
 
         const tierAvailable = tierUnlocked && hasPrereqs;
 
-        // Check max count (settler's camp = 1)
         let maxCountMet = false;
         if (def.id === 'settlers_camp') {
           const count = [...gameState.buildings.values()].filter(b => b.defId === 'settlers_camp').length;
@@ -103,7 +133,6 @@ export class BuildMenu {
           transition: 'background 0.15s',
         });
 
-        // Cost chips with per-resource affordability coloring
         const costEntries = Object.entries(def.resourceCost) as [ResourceType, number][];
         let costHtml = '';
         if (costEntries.length === 0) {
@@ -121,22 +150,24 @@ export class BuildMenu {
           <div style="font-size:11px;margin-top:1px">${costHtml}</div>
         `;
 
+        btn.addEventListener('mouseenter', () => {
+          if (available && this.selectedBuilding !== def.id) {
+            btn.style.background = 'rgba(212, 201, 168, 0.15)';
+          }
+          this.showTooltip(def, btn);
+        });
+        btn.addEventListener('mouseleave', () => {
+          if (available && this.selectedBuilding !== def.id) {
+            btn.style.background = 'rgba(212, 201, 168, 0.05)';
+          }
+          this.tooltip.style.display = 'none';
+        });
+
         if (available) {
           btn.addEventListener('click', () => {
             this.selectedBuilding = this.selectedBuilding === def.id ? null : def.id;
             this.onSelect(this.selectedBuilding);
             this.update(gameState);
-          });
-
-          btn.addEventListener('mouseenter', () => {
-            if (this.selectedBuilding !== def.id) {
-              btn.style.background = 'rgba(212, 201, 168, 0.15)';
-            }
-          });
-          btn.addEventListener('mouseleave', () => {
-            if (this.selectedBuilding !== def.id) {
-              btn.style.background = 'rgba(212, 201, 168, 0.05)';
-            }
           });
         }
 
@@ -145,6 +176,49 @@ export class BuildMenu {
     }
 
     this.el.scrollTop = scroll;
+  }
+
+  private showTooltip(def: typeof BUILDING_DEFS[string], anchor: HTMLElement): void {
+    const rect = anchor.getBoundingClientRect();
+    const containerRect = document.getElementById('game-container')!.getBoundingClientRect();
+
+    this.tooltip.style.top = `${rect.top - containerRect.top}px`;
+    this.tooltip.style.display = 'block';
+
+    let html = `
+      <div style="font-weight:700;font-size:13px;margin-bottom:4px">${def.name}</div>
+      <div style="color:#b0a88c;font-size:11px;line-height:1.4;margin-bottom:8px">${def.description}</div>
+      <div style="font-size:10px;color:#8a7e65;margin-bottom:4px">Size: ${def.footprint.w}×${def.footprint.h}</div>
+    `;
+
+    const prodEntries = Object.entries(def.resourceProduction) as [ResourceType, number][];
+    if (prodEntries.length > 0) {
+      const parts = prodEntries.map(([res, amt]) => `${RES_ICONS[res]}+${amt} ${RESOURCE_LABELS[res]}`);
+      html += `<div style="color:#88cc88;margin-bottom:2px">${parts.join(', ')}</div>`;
+    }
+
+    const consEntries = Object.entries(def.resourceConsumption) as [ResourceType, number][];
+    if (consEntries.length > 0) {
+      const parts = consEntries.map(([res, amt]) => `${RES_ICONS[res]}-${amt} ${RESOURCE_LABELS[res]}`);
+      html += `<div style="color:#cc5555;margin-bottom:2px">${parts.join(', ')}</div>`;
+    }
+
+    if (def.emissions.length > 0) {
+      const parts = def.emissions.map(e => `${LAYER_SHORT[e.layer]} +${e.strength} (r${e.radius})`);
+      html += `<div style="color:#aaa;font-size:10px;margin-top:4px">Emits: ${parts.join(', ')}</div>`;
+    }
+
+    if (def.suppressions.length > 0) {
+      const parts = def.suppressions.map(e => `${LAYER_SHORT[e.layer]} -${e.strength} (r${e.radius})`);
+      html += `<div style="color:#cc8866;font-size:10px">Suppresses: ${parts.join(', ')}</div>`;
+    }
+
+    if (def.prerequisites.length > 0) {
+      const names = def.prerequisites.map(p => BUILDING_DEFS[p]?.name ?? p);
+      html += `<div style="color:#8a7e65;font-size:10px;margin-top:4px">Requires: ${names.join(', ')}</div>`;
+    }
+
+    this.tooltip.innerHTML = html;
   }
 
   deselect(): void {

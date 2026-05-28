@@ -1,11 +1,9 @@
 import { Container, Graphics } from 'pixi.js';
 import { GameState } from '../core/GameState';
 import { CELL_SIZE } from '../core/Config';
-import { SubstrateLayer, SUBSTRATE_COLORS, TERRAIN_PASSABLE } from '../types';
+import { DevType, DEV_TYPE_COLORS, SubstrateLayer, SUBSTRATE_COLORS, TERRAIN_PASSABLE } from '../types';
 
-const DEV_THRESHOLD = 1.5;
-
-const LAYER_PRIORITY: SubstrateLayer[] = [
+const SUBSTRATE_PRIORITY: SubstrateLayer[] = [
   SubstrateLayer.Sustenance,
   SubstrateLayer.Industry,
   SubstrateLayer.Prosperity,
@@ -29,59 +27,47 @@ export class PopulationRenderer {
     g.clear();
 
     const grid = gameState.grid;
-    const totalPop = gameState.population.totalPopulation;
 
     for (let y = 0; y < grid.height; y++) {
       for (let x = 0; x < grid.width; x++) {
         const cell = grid.cells[y][x];
         if (!TERRAIN_PASSABLE[cell.terrain] || cell.buildingId) continue;
+        if (cell.devLevel === 0 || !cell.devType) continue;
 
-        let dominant: SubstrateLayer | null = null;
-        let dominantVal = 0;
-
-        for (const layer of LAYER_PRIORITY) {
-          const val = cell.substrate[layer];
-          if (val > DEV_THRESHOLD && val > dominantVal) {
-            dominant = layer;
-            dominantVal = val;
-          }
-        }
-
-        if (!dominant) continue;
-
-        const intensity = Math.min(1, (dominantVal - DEV_THRESHOLD) / 6);
+        const intensity = cell.devLevel / 3;
         const px = x * CELL_SIZE;
         const py = y * CELL_SIZE;
-        const color = SUBSTRATE_COLORS[dominant];
+        const color = DEV_TYPE_COLORS[cell.devType];
+        const seed = x * 73 + y * 137;
 
-        // Subtle terrain tint showing substrate influence
         g.rect(px, py, CELL_SIZE, CELL_SIZE);
         g.fill({ color, alpha: 0.08 + intensity * 0.12 });
 
-        // Development indicators by type
-        const seed = x * 73 + y * 137;
-
-        if (dominant === SubstrateLayer.Sustenance && totalPop > 0) {
-          this.drawHuts(g, px, py, intensity, seed);
-        } else if (dominant === SubstrateLayer.Industry) {
-          this.drawIndustry(g, px, py, intensity, seed);
-        } else if (dominant === SubstrateLayer.Prosperity) {
-          this.drawProsperity(g, px, py, intensity, seed);
-        } else if (dominant === SubstrateLayer.Security) {
-          this.drawSecurity(g, px, py, intensity, seed);
-        } else if (dominant === SubstrateLayer.Piety) {
-          this.drawPiety(g, px, py, intensity, seed);
-        } else if (dominant === SubstrateLayer.Culture) {
-          this.drawCulture(g, px, py, intensity, seed);
+        if (cell.devDistress > 0.3) {
+          const distressAlpha = (cell.devDistress - 0.3) * 0.25;
+          g.rect(px + 1, py + 1, CELL_SIZE - 2, CELL_SIZE - 2);
+          g.fill({ color: 0x331111, alpha: distressAlpha });
         }
 
-        // Secondary substrate influence shown as corner pip
-        for (const layer of LAYER_PRIORITY) {
-          if (layer === dominant) continue;
+        if (cell.devType === DevType.LaborerHousing) {
+          this.drawHuts(g, px, py, intensity, seed);
+        } else if (cell.devType === DevType.ArtisanQuarter) {
+          this.drawWorkshops(g, px, py, intensity, seed);
+        } else if (cell.devType === DevType.MarketWard) {
+          this.drawMarketStalls(g, px, py, intensity, seed);
+        } else if (cell.devType === DevType.Garrison) {
+          this.drawGarrison(g, px, py, intensity, seed);
+        } else if (cell.devType === DevType.SacredQuarter) {
+          this.drawSacred(g, px, py, intensity, seed);
+        } else if (cell.devType === DevType.NobleEstate) {
+          this.drawNoble(g, px, py, intensity, seed);
+        }
+
+        for (const layer of SUBSTRATE_PRIORITY) {
           const val = cell.substrate[layer];
-          if (val > DEV_THRESHOLD * 1.5) {
+          if (val > 2.0) {
             const secColor = SUBSTRATE_COLORS[layer];
-            const corner = LAYER_PRIORITY.indexOf(layer) % 4;
+            const corner = SUBSTRATE_PRIORITY.indexOf(layer) % 4;
             const cx = px + (corner % 2 === 0 ? 2 : CELL_SIZE - 4);
             const cy = py + (corner < 2 ? 2 : CELL_SIZE - 4);
             g.circle(cx, cy, 1.2);
@@ -92,7 +78,6 @@ export class PopulationRenderer {
     }
   }
 
-  // Small triangular hut shapes
   private drawHuts(g: Graphics, px: number, py: number, intensity: number, seed: number): void {
     const count = Math.ceil(intensity * 3);
     for (let i = 0; i < count; i++) {
@@ -109,8 +94,7 @@ export class PopulationRenderer {
     }
   }
 
-  // Small gear/diamond shapes for industry
-  private drawIndustry(g: Graphics, px: number, py: number, intensity: number, seed: number): void {
+  private drawWorkshops(g: Graphics, px: number, py: number, intensity: number, seed: number): void {
     const count = Math.ceil(intensity * 2);
     for (let i = 0; i < count; i++) {
       const hash = (seed + i * 53) & 0xffff;
@@ -127,8 +111,7 @@ export class PopulationRenderer {
     }
   }
 
-  // Small circles for prosperity/coins
-  private drawProsperity(g: Graphics, px: number, py: number, intensity: number, seed: number): void {
+  private drawMarketStalls(g: Graphics, px: number, py: number, intensity: number, seed: number): void {
     const count = Math.ceil(intensity * 2);
     for (let i = 0; i < count; i++) {
       const hash = (seed + i * 61) & 0xffff;
@@ -140,8 +123,7 @@ export class PopulationRenderer {
     }
   }
 
-  // Small cross/plus for security
-  private drawSecurity(g: Graphics, px: number, py: number, intensity: number, seed: number): void {
+  private drawGarrison(g: Graphics, px: number, py: number, intensity: number, seed: number): void {
     const hash = (seed + 41) & 0xffff;
     const sx = px + (hash % (CELL_SIZE - 6)) + 3;
     const sy = py + ((hash >> 4) % (CELL_SIZE - 6)) + 3;
@@ -154,8 +136,7 @@ export class PopulationRenderer {
     g.fill({ color: 0xff4444, alpha });
   }
 
-  // Small triangle/obelisk for piety
-  private drawPiety(g: Graphics, px: number, py: number, intensity: number, seed: number): void {
+  private drawSacred(g: Graphics, px: number, py: number, intensity: number, seed: number): void {
     const hash = (seed + 37) & 0xffff;
     const ox = px + (hash % (CELL_SIZE - 4)) + 2;
     const oy = py + ((hash >> 3) % (CELL_SIZE - 6)) + 3;
@@ -168,8 +149,7 @@ export class PopulationRenderer {
     g.fill({ color: 0xcc66ff, alpha: 0.4 + intensity * 0.3 });
   }
 
-  // Small square/scroll for culture
-  private drawCulture(g: Graphics, px: number, py: number, intensity: number, seed: number): void {
+  private drawNoble(g: Graphics, px: number, py: number, intensity: number, seed: number): void {
     const hash = (seed + 29) & 0xffff;
     const cx = px + (hash % (CELL_SIZE - 6)) + 3;
     const cy = py + ((hash >> 4) % (CELL_SIZE - 6)) + 3;

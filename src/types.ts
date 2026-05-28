@@ -33,12 +33,24 @@ export enum CitizenTier {
   Elite = 'elite',
 }
 
+export enum DevType {
+  LaborerHousing = 'laborer_housing',
+  ArtisanQuarter = 'artisan_quarter',
+  MarketWard = 'market_ward',
+  SacredQuarter = 'sacred_quarter',
+  Garrison = 'garrison',
+  NobleEstate = 'noble_estate',
+}
+
 export interface GridCell {
   x: number;
   y: number;
   terrain: TerrainType;
   buildingId: string | null;
   substrate: Record<SubstrateLayer, number>;
+  devLevel: number;
+  devType: DevType | null;
+  devDistress: number;
 }
 
 export interface SubstrateEmission {
@@ -50,6 +62,7 @@ export interface SubstrateEmission {
 export interface BuildingDef {
   id: string;
   name: string;
+  description: string;
   footprint: { w: number; h: number };
   emissions: SubstrateEmission[];
   suppressions: SubstrateEmission[];
@@ -110,4 +123,22 @@ export const RESOURCE_LABELS: Record<ResourceType, string> = {
   [ResourceType.Stone]: 'Stone',
   [ResourceType.Bronze]: 'Bronze',
   [ResourceType.Wealth]: 'Wealth',
+};
+
+export const DEV_TYPE_COLORS: Record<DevType, number> = {
+  [DevType.LaborerHousing]: 0xc9a86c,
+  [DevType.ArtisanQuarter]: 0xff8c00,
+  [DevType.MarketWard]: 0xffd700,
+  [DevType.SacredQuarter]: 0xcc66ff,
+  [DevType.Garrison]: 0xff4444,
+  [DevType.NobleEstate]: 0x4488ff,
+};
+
+export const DEV_TYPE_LABELS: Record<DevType, string> = {
+  [DevType.LaborerHousing]: 'Laborer Hovels',
+  [DevType.ArtisanQuarter]: 'Artisan Quarter',
+  [DevType.MarketWard]: 'Market Ward',
+  [DevType.SacredQuarter]: 'Sacred Quarter',
+  [DevType.Garrison]: 'Garrison',
+  [DevType.NobleEstate]: 'Noble Estate',
 };
